@@ -1,9 +1,13 @@
 # Reproducible Research: Peer Assessment 1
-
 ## Loading and preprocessing the data
-First we read the csv file
+First, the csv file is read and a first preprocess is done.
 
 ```r
+library(data.table)
+library(chron)
+library(ggplot2)
+library(plyr)
+
 setwd("activity")
 data <- read.csv("activity.csv")
 dataDF <- data.frame(data)
@@ -86,47 +90,25 @@ Now comes a rather complicated way to assign the average of a given time interva
 ```r
 index <- is.na(dataDF$steps)
 averageDF <- data.frame(averageSteps)
-library(data.table)
-setDT(averageDF, keep.rownames = TRUE)[]
-```
-
-```
-##        rn averageSteps
-##   1:    0    1.7169811
-##   2:    5    0.3396226
-##   3:   10    0.1320755
-##   4:   15    0.1509434
-##   5:   20    0.0754717
-##  ---                  
-## 284: 2335    4.6981132
-## 285: 2340    3.3018868
-## 286: 2345    0.6415094
-## 287: 2350    0.2264151
-## 288: 2355    1.0754717
-```
-
-```r
-transform(averageDF, rn = as.numeric(rn))
-```
-
-```
-##        rn averageSteps
-##   1:    0    1.7169811
-##   2:    5    0.3396226
-##   3:   10    0.1320755
-##   4:   15    0.1509434
-##   5:   20    0.0754717
-##  ---                  
-## 284: 2335    4.6981132
-## 285: 2340    3.3018868
-## 286: 2345    0.6415094
-## 287: 2350    0.2264151
-## 288: 2355    1.0754717
-```
-
-```r
+setDT(averageDF, keep.rownames = TRUE)
+invisible(transform(averageDF, rn = as.numeric(rn)))
 newDF<- dataDF
 newDF$steps[index] <- averageDF[averageDF$rn == newDF$interval[index]]$averageSteps
+# replace all the na values, this is just a hacki way to do it. a while loop would be better...
+index2 <- is.na(newDF$steps)
+newDF$steps[index2] <- averageDF[averageDF$rn == newDF$interval[index2]]$averageSteps
+index3 <- is.na(newDF$steps)
+newDF$steps[index3] <- averageDF[averageDF$rn == newDF$interval[index3]]$averageSteps
+index4 <- is.na(newDF$steps)
+newDF$steps[index4] <- averageDF[averageDF$rn == newDF$interval[index4]]$averageSteps
+index5 <- is.na(newDF$steps)
+newDF$steps[index5] <- averageDF[averageDF$rn == newDF$interval[index5]]$averageSteps
+index6 <- is.na(newDF$steps)
+newDF$steps[index6] <- averageDF[averageDF$rn == newDF$interval[index6]]$averageSteps
+index7 <- is.na(newDF$steps)
+newDF$steps[index7] <- averageDF[averageDF$rn == newDF$interval[index7]]$averageSteps
+index8 <- is.na(newDF$steps)
+newDF$steps[index8] <- averageDF[averageDF$rn == newDF$interval[index8]]$averageSteps
 ```
 
 Here comes the histogram
@@ -166,10 +148,24 @@ c(median,newMedian)
 ```
 
 ```
-## [1] 10765.00 10765.59
+## [1] 10765.00 10766.19
 ```
 
 Since we replaced the NAs with the mean values, the mean is preserved. But the median differs slightly, since the median and the mean are very close but not equal, the oparation of replacing NAs did affect the median. 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Creating a factor variable.
+
+```r
+newDF$workwe <- ifelse(is.weekend(as.Date(newDF$date)), "weekend","weekday" )
+newDF <- transform(newDF,workwe =factor(workwe))
+```
+And the plot that distinguishes weekend and weekdays.
+
+```r
+qplot(interval, steps, data = newDF,stat = "summary", fun.y = "mean", facets = workwe~., main="average weekday weekend", ylab="Number of steps",geom = "line")
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
