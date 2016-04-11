@@ -1,112 +1,175 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 ## Loading and preprocessing the data
 First we read the csv file
-``` {r read_data}
+
+```r
 setwd("activity")
 data <- read.csv("activity.csv")
 dataDF <- data.frame(data)
 ```
 ## What is mean total number of steps taken per day?
 The data is first summarized to calculate the number of steps per day. Then the histogram is ploted with adjusted namings.
-``` {r mean_histogram}
+
+```r
 stepsPerDay <- tapply(data$steps, data$date, FUN=sum)
 hist(stepsPerDay,  main = "Histogram of total numbers of steps",ylab="number of days within the range", xlab="total number of steps per day")
 ```
+
+![](PA1_template_files/figure-html/mean_histogram-1.png) 
 The mean of the total number of steps taken per day is computed as follows.
-``` {r mean}
+
+```r
 stepsPerDayDF <- data.frame(stepsPerDay)
 mean <- colMeans(stepsPerDayDF, na.rm = TRUE)
 mean
 ```
+
+```
+## stepsPerDay 
+##    10766.19
+```
 The median of the total number of steps taken per day is computed as follows.
-``` {r median}
+
+```r
 median <- median(stepsPerDayDF$stepsPerDay, na.rm = TRUE)
 median
 ```
 
+```
+## [1] 10765
+```
+
 ## What is the average daily activity pattern?
 First, all the rows with NA are removed. Then, the average steps per 5 minutes are evaluated and the 5 minute intervalls are represented in minutes (24hours = 1440 minutes).
-``` {r data-average}
+
+```r
 cleanData <- data[complete.cases(data),]
 averageSteps <- tapply(cleanData$steps, cleanData$interval, FUN=mean)
 dataForPlot = cbind(seq(0,1435 , 5),averageSteps)
 ```
 
 And here comes the plot.
-``` {r plot-average}
+
+```r
 plot(dataForPlot, type= "l", xlab="One day in minutes", ylab="average steps per 5minutes")
 ```
 
+![](PA1_template_files/figure-html/plot-average-1.png) 
+
 Finding the time with the maximum numbers of steps:
-``` {r data-interval}
+
+```r
 dataMax <- data.frame(dataForPlot)
 searchedInterval <- dataMax[which.max(dataMax$averageSteps),1]
 cat("The 5 minute intervall with the maximal number of steps starts at ", searchedInterval%/%60,":",searchedInterval%%60)
 ```
 
+```
+## The 5 minute intervall with the maximal number of steps starts at  8 : 35
+```
+
 ## Imputing missing values
 First, the number of rows containing a NA is given:
 
-``` {r}
+
+```r
 sum(is.na(dataDF$steps))
 ```
 
+```
+## [1] 2304
+```
+
 Now comes a rather complicated way to assign the average of a given time intervall to an NA value.
-``` {r}
+
+```r
 index <- is.na(dataDF$steps)
 averageDF <- data.frame(averageSteps)
 library(data.table)
 setDT(averageDF, keep.rownames = TRUE)[]
+```
+
+```
+##        rn averageSteps
+##   1:    0    1.7169811
+##   2:    5    0.3396226
+##   3:   10    0.1320755
+##   4:   15    0.1509434
+##   5:   20    0.0754717
+##  ---                  
+## 284: 2335    4.6981132
+## 285: 2340    3.3018868
+## 286: 2345    0.6415094
+## 287: 2350    0.2264151
+## 288: 2355    1.0754717
+```
+
+```r
 transform(averageDF, rn = as.numeric(rn))
+```
+
+```
+##        rn averageSteps
+##   1:    0    1.7169811
+##   2:    5    0.3396226
+##   3:   10    0.1320755
+##   4:   15    0.1509434
+##   5:   20    0.0754717
+##  ---                  
+## 284: 2335    4.6981132
+## 285: 2340    3.3018868
+## 286: 2345    0.6415094
+## 287: 2350    0.2264151
+## 288: 2355    1.0754717
+```
+
+```r
 newDF<- dataDF
 newDF$steps[index] <- averageDF[averageDF$rn == newDF$interval[index]]$averageSteps
 ```
 
 Here comes the histogram
-```{r}
+
+```r
 stepsNewDF<- tapply(newDF$steps, newDF$date, FUN=sum)
 hist(stepsNewDF,  main = "Histogram of total numbers of steps with modified data",ylab="number of days within the range", xlab="total number of steps per day")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+
 Computation of the new mean:
-``` {r newMean}
+
+```r
 stepsNewDF <- data.frame(stepsNewDF)
 newMean<- colMeans(stepsNewDF, na.rm = TRUE)
 ```
 Computation of the new median:
-``` {r newMedian}
+
+```r
 newMedian <- median(stepsNewDF$stepsNewDF, na.rm = TRUE)
 ```
 
 And here both given in comparrison with the initially computed mean and median.
-```{r}
+
+```r
 c(mean,newMean)
+```
+
+```
+## stepsPerDay  stepsNewDF 
+##    10766.19    10766.19
+```
+
+```r
 c(median,newMedian)
+```
+
+```
+## [1] 10765.00 10765.59
 ```
 
 Since we replaced the NAs with the mean values, the mean is preserved. But the median differs slightly, since the median and the mean are very close but not equal, the oparation of replacing NAs did affect the median. 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
-library(chron)
-library(ggplot2)
-library(plyr)
-
-newDF$weekday <- ifelse(is.weekend(as.Date(newDF$date)), "weekend","weekday" )
-newDF <- transform(newDF,weekday =factor(weekday))
-average <- ddply(newDF ,~weekday, summarise, mean=mean(steps))
-
-        
-NEIfactor <- transform(NEI, year = factor(year))
-sumNEI<-ddply(NEIfactor,~year,summarise,sum=sum(Emissions))
-#plot
-par(mar = c(5, 6.5, 3, 1), mgp = c(5, 2, 0)) #set margins
-with(sumNEI, plot(year,sum, ylab="Total PM2.5 in tons", main="Total PM2.5 emission per year",yaxt="n"))
-axis(side = 2, las = 1) #to label the y-axis horizontally
-
